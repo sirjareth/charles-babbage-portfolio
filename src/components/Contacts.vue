@@ -1,13 +1,12 @@
 <script setup>
-    import { ref } from 'vue';
+    import { ref, onMounted, onBeforeMount } from 'vue';
 
     import { Notyf } from 'notyf';
     import 'notyf/notyf.min.css';
 
     const notyf = new Notyf();
 
-
-    const WEB3FORMS_ACCESS_KEY = "078cc020-a983-41c0-97a2-4a565aa157f3";
+    const WEB3FORMS_ACCESS_KEY = "a53ffc07-edbd-4cbd-9530-be2dd09d70cc";
 
     const subject = "New message from Portfolio Contact Form";
 
@@ -19,6 +18,11 @@
 
 
     const submitForm = async() => {
+
+        if(!recaptchaToken.value) {
+            notyf.error('Please verify that you are not a robot.');
+            return;
+        }
 
         isLoading.value = true;
 
@@ -53,8 +57,63 @@
 
             isLoading.value = false;
             notyf.error("Failed to send message");
+
+        } finally {
+
+            resetRecaptcha();
         }
     }
+
+    /*recaptcha integration*/
+
+    const SITE_KEY = '6LeDDPUsAAAAAP591CT292ywpnFHZA83d6HfeAgF';
+
+    const recaptchaContainer = ref(null);
+    const recaptchaWidgetId = ref(null);
+    const recaptchaToken = ref('');
+
+
+    function onRecaptchaSuccess(token) {
+        recaptchaToken.value = token;
+    }
+
+    function onRecaptchaExpired() {
+        recaptchaToken.value = '';
+    }
+
+    function renderRecaptcha() {
+        if(!window.grecaptcha) {
+            console.error('reCAPTCHA not loaded');
+            return;
+        }
+
+        recaptchaWidgetId.value = window.grecaptcha.render(recaptchaContainer.value, {
+            sitekey: SITE_KEY,
+            size: 'normal',
+            callback: onRecaptchaSuccess,
+            'expired-callback': onRecaptchaExpired
+        });
+    }
+
+    function resetRecaptcha() {
+        if(recaptchaWidgetId.value !== null) {
+            window.grecaptcha.reset(recaptchaWidgetId.value);
+            recaptchaToken.value = '';
+        }
+    }
+
+    onMounted(() => {
+        const interval = setInterval(() => {
+            if(window.grecaptcha && window.grecaptcha.render) {
+                renderRecaptcha();
+                clearInterval(interval)
+            }
+        }, 100);
+
+        onBeforeMount(() => {
+            clearInterval(interval);
+        });
+    })
 
 </script>
 
@@ -69,13 +128,19 @@
             <div class="col-md-6">
                 <form @submit.prevent="submitForm">
                     <div class="mb-3">
-                        <input v-model="name" type="text" class="form-control contact-form-control" placeholder="First Name M.I. Last Name">
+                        <input type="text"
+                         v-model="name"
+                         class="form-control contact-form-control" placeholder="First Name M.I. Last Name">
                     </div>
                     <div class="mb-3">
-                        <input v-model="email" type="email" class="form-control contact-form-control" placeholder="Email">
+                        <input type="email"
+                        v-model="email"
+                        class="form-control contact-form-control" placeholder="Email">
                     </div>
                     <div class="mb-3">
-                        <textarea v-model="message" class="form-control contact-form-control" rows="6" placeholder="Message"></textarea>
+                        <textarea 
+                        v-model="message"
+                        class="form-control contact-form-control" rows="6" placeholder="Message"></textarea>
                     </div>
                     <div class="form-footer">
                         <div class="social-icons">
@@ -84,12 +149,15 @@
                             <a href="https://gitlab.com/cbabbage0991" id="gitlab"><i class="fab fa-gitlab"></i></a>
                             <a href="https://github.com/cbabbage0991" id="github"><i class="fab fa-github"></i></a>
                         </div>
-                        <button :disabled="isLoading" type="submit" class="submit-btn pl-5 pr-5">{{ isLoading ? "Sending..." : "Submit" }}</button>
+                        <button type="submit" class="submit-btn pl-5 pr-5" :disabled="isLoading">{{isLoading ? "Sending..." : "Submit"}}</button>
+                    </div>
+
+                    <div class="d-flex justify-content-end mt-2">
+                        <div ref="recaptchaContainer"></div>
                     </div>
                 </form>
                 
             </div>
         </div>
     </div>
-
 </template>
