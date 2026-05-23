@@ -65,8 +65,8 @@
     }
 
     /*recaptcha integration*/
-
-    const SITE_KEY = '6Ldn5_YsAAAAAKMODxn2LbKCv9b2gF2zK3tU3Ihx';
+    // 6Ldn5_YsAAAAAKMODxn2LbKCv9b2gF2zK3tU3Ihx
+    const SITE_KEY = '6LdkqvgsAAAAAIscoOB4f4fnGcntCNgicW8xwt-i';
 
     const recaptchaContainer = ref(null);
     const recaptchaWidgetId = ref(null);
